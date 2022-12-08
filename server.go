@@ -24,8 +24,9 @@ func New() *Server {
 		uprader:       websocket.FastHTTPUpgrader{},
 		topics:        make(map[string]*topic),
 		defaultTopics: make([]string, 0),
+		server:        fasthttp.Server{},
 	}
-	requestHandler := func(ctx *fasthttp.RequestCtx) {
+	s.server.Handler = func(ctx *fasthttp.RequestCtx) {
 		switch string(ctx.Path()) {
 		case "/rmessage":
 			s.rmessage(ctx)
@@ -33,10 +34,6 @@ func New() *Server {
 			ctx.Error("Unsupported path", fasthttp.StatusNotFound)
 		}
 	}
-	server := fasthttp.Server{
-		Handler: requestHandler,
-	}
-	s.server = server
 	return s
 }
 
