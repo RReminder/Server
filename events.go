@@ -12,5 +12,6 @@ func newEvents() *Events {
 		OnAuth: func(user *User, message *Message) bool {
 			return true
 		},
+		OnMessage: func(user *User, message *Message) {},
 	}
 }

@@ -25,6 +25,9 @@ func New() *Server {
 		topics:        make(map[string]*topic),
 		defaultTopics: make([]string, 0),
 		server:        fasthttp.Server{},
+		Events:        newEvents(),
+		userCount:     atomic.Int64{},
+		users:         make(map[int64]*User),
 	}
 	s.server.Handler = func(ctx *fasthttp.RequestCtx) {
 		switch string(ctx.Path()) {
