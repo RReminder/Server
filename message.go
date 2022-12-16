@@ -58,9 +58,15 @@ func (s *Server) BroadCast(topic string, payload interface{}) error {
 	if err != nil {
 		return err
 	}
+	newSubscribers := make([]*User, 0)
 	for _, user := range rtopic.subcribers {
+		if !user.Online {
+			continue
+		}
 		user.conn.WriteMessage(websocket.TextMessage, data)
+		newSubscribers = append(newSubscribers, user)
 	}
+	rtopic.subcribers = newSubscribers
 	return nil
 }
 func (s *Server) SendToUser(topic string, payload interface{}, userID int64) error {
