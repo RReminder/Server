@@ -5,18 +5,20 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/fasthttp/router"
 	"github.com/fasthttp/websocket"
 	"github.com/valyala/fasthttp"
 )
 
 type Server struct {
 	uprader       websocket.FastHTTPUpgrader
-	server        fasthttp.Server
+	FServer       fasthttp.Server
 	Events        *Events
 	userCount     atomic.Int64
 	users         map[int64]*User
 	topics        map[string]*topic
 	defaultTopics []*topic
+	Router        *router.Router
 }
 
 func New() *Server {
@@ -28,19 +30,14 @@ func New() *Server {
 		},
 		topics:        make(map[string]*topic),
 		defaultTopics: make([]*topic, 0),
-		server:        fasthttp.Server{},
+		FServer:       fasthttp.Server{},
 		Events:        newEvents(),
 		userCount:     atomic.Int64{},
 		users:         make(map[int64]*User),
+		Router:        router.New(),
 	}
-	s.server.Handler = func(ctx *fasthttp.RequestCtx) {
-		switch string(ctx.Path()) {
-		case "/rmessage":
-			s.rmessage(ctx)
-		default:
-			ctx.Error("Unsupported path", fasthttp.StatusNotFound)
-		}
-	}
+	s.Router.ANY("/rmessage", s.rmessage)
+	s.FServer.Handler = s.Router.Handler
 	return s
 }
 
@@ -99,13 +96,13 @@ func (s *Server) rmessage(ctx *fasthttp.RequestCtx) {
 	}
 }
 func (s *Server) ListenAndServe(addr string) error {
-	return s.server.ListenAndServe(addr)
+	return s.FServer.ListenAndServe(addr)
 }
 func (s *Server) ListenAndServeTLS(addr string, certFile string, keyFile string) error {
-	return s.server.ListenAndServeTLS(addr, certFile, keyFile)
+	return s.FServer.ListenAndServeTLS(addr, certFile, keyFile)
 }
 func (s *Server) ListenAndServeTLSEmbed(addr string, cert []byte, key []byte) error {
-	return s.server.ListenAndServeTLSEmbed(addr, cert, key)
+	return s.FServer.ListenAndServeTLSEmbed(addr, cert, key)
 }
 func (s *Server) AddTopic(topicName string, defaultTopic bool) error {
 	newTopic := &topic{
