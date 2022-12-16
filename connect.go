@@ -11,4 +11,5 @@ type User struct {
 	ConnectTime     time.Time
 	conn            *websocket.Conn
 	SubcribedTopics []string
+	Online          bool
 }

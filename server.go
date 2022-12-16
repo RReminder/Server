@@ -16,14 +16,14 @@ type Server struct {
 	userCount     atomic.Int64
 	users         map[int64]*User
 	topics        map[string]*topic
-	defaultTopics []string
+	defaultTopics []*topic
 }
 
 func New() *Server {
 	s := &Server{
 		uprader:       websocket.FastHTTPUpgrader{},
 		topics:        make(map[string]*topic),
-		defaultTopics: make([]string, 0),
+		defaultTopics: make([]*topic, 0),
 		server:        fasthttp.Server{},
 		Events:        newEvents(),
 		userCount:     atomic.Int64{},
@@ -48,19 +48,27 @@ func (s *Server) rmessage(ctx *fasthttp.RequestCtx) {
 			ConnectTime:     time.Now(),
 			SubcribedTopics: make([]string, 0),
 			conn:            ws,
+			Online:          true,
 		}
 		s.users[user.ID] = user
+		defer s.offlineUser(user.ID)
 		_, ms, err := ws.ReadMessage()
 		if err != nil {
 			return
 		}
 		// Start to auth
 		authMessage, err := toMessage(ms)
-		if err != nil {
+		if err != nil || authMessage.Type != MessageTypeAuth {
 			return
 		}
-		s.Events.OnAuth(user, authMessage)
+		if !s.Events.OnAuth(user, authMessage) {
+			return
+		}
 		messagePool.Put(authMessage)
+		// start to subscribe default topics
+		for _, defaultTopic := range s.defaultTopics {
+			defaultTopic.subcribers = append(defaultTopic.subcribers, user)
+		}
 		for {
 			_, ms, err := ws.ReadMessage()
 			if err != nil {
@@ -99,12 +107,16 @@ func (s *Server) AddTopic(topicName string, defaultTopic bool) error {
 	newTopic := &topic{
 		subcribers: make([]*User, 0),
 	}
-	s.topics[topicName] = newTopic
 	if defaultTopic {
-		s.defaultTopics = append(s.defaultTopics, topicName)
 		for _, user := range s.users {
 			newTopic.subcribers = append(newTopic.subcribers, user)
 		}
+		s.defaultTopics = append(s.defaultTopics, newTopic)
 	}
+	s.topics[topicName] = newTopic
 	return nil
+}
+func (s *Server) offlineUser(userID int64) {
+	// delete it from the subscribe list
+	s.users[userID].Online = false
 }

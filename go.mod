@@ -1,4 +1,4 @@
-module rremote
+module github.com/RReminder/Server
 
 go 1.19
 
