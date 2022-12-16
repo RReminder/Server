@@ -82,5 +82,8 @@ func (s *Server) SendToUser(topic string, payload interface{}, userID int64) err
 	if !ok {
 		return errors.New("unknown user")
 	}
+	if !user.Online {
+		return errors.New("the user is offline")
+	}
 	return user.conn.WriteMessage(websocket.TextMessage, data)
 }
