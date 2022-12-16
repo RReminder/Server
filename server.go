@@ -21,7 +21,11 @@ type Server struct {
 
 func New() *Server {
 	s := &Server{
-		uprader:       websocket.FastHTTPUpgrader{},
+		uprader: websocket.FastHTTPUpgrader{
+			CheckOrigin: func(ctx *fasthttp.RequestCtx) bool {
+				return true
+			},
+		},
 		topics:        make(map[string]*topic),
 		defaultTopics: make([]*topic, 0),
 		server:        fasthttp.Server{},

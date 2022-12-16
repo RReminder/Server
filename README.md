@@ -7,7 +7,7 @@
 
 #### 1.向特定topic发送消息
 {
-    "type" : "1",
+    "type" : 1,
     "topic" : "topic",
     "message" : 
 }
