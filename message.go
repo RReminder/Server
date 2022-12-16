@@ -23,7 +23,7 @@ const (
 
 var messagePool = sync.Pool{
 	New: func() any {
-		return Message{}
+		return new(Message)
 	},
 }
 
